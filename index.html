@@ -31,7 +31,7 @@
         html, body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-deep); /* Garante que o fundo seja preto desde o início */
+            background-color: var(--bg-deep);
         }
 
         body {
@@ -40,13 +40,11 @@
             background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
-            /* Ajuste inferior para o iPhone */
             padding-bottom: calc(110px + env(safe-area-inset-bottom));
             overflow-x: hidden;
         }
 
         header {
-            /* env(safe-area-inset-top) empurra o conteúdo para baixo do "Notch" mas mantém o fundo preto acima */
             padding-top: env(safe-area-inset-top, 20px);
             width: 100%; height: auto;
             display: flex; justify-content: center; align-items: center;
@@ -58,7 +56,6 @@
             padding-bottom: 15px;
         }
 
-        /* --- SISTEMA DE NOTIFICAÇÃO --- */
         #notify-container {
             position: fixed;
             bottom: 100px;
@@ -104,7 +101,6 @@
         .notify-error { border-left: 4px solid var(--danger); background: rgba(30, 10, 10, 0.9); }
         .notify-error .notify-icon { color: var(--danger); }
 
-        /* --- JANELA DE CONFIRMAÇÃO --- */
         #modalConfirmacao {
             display: none;
             position: fixed;
@@ -137,7 +133,6 @@
             font-weight: 600; margin-top: 10px; cursor: pointer;
         }
 
-        /* --- ESTRUTURA DOS CARDS --- */
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         .card {
             background: rgba(21, 21, 21, 0.8);
@@ -173,18 +168,15 @@
         .day-today { border: 2px solid var(--primary) !important; }
         .day small { font-size: 0.65rem; margin-top: 2px; color: var(--primary); font-weight: 800; }
 
-        /* --- BARRA DE NAVEGAÇÃO --- */
         .nav {
             position: fixed; bottom: 0; width: 100%; display: flex;
             background: rgba(10, 10, 10, 0.95); 
-            /* Ajuste para barra de gestos do iPhone */
             padding: 10px 0 calc(20px + env(safe-area-inset-bottom)) 0;
             backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.05); z-index: 1000;
         }
         .nav button { background: none; color: var(--text-muted); border: none; width: 100%; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .active-nav { color: var(--primary) !important; }
 
-        /* --- MODAL CUSTOMIZADO --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 5000; backdrop-filter: blur(8px); }
         .modal-custom { background: var(--bg-card); width: 85%; max-width: 320px; border-radius: 28px; padding: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); position: relative; }
         .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--danger); cursor: pointer; padding: 5px; }
@@ -212,12 +204,12 @@
         <button class="btn-close-modal" onclick="fecharModal()">
             <span class="material-symbols-rounded">cancel</span>
         </button>
-        <h3 id="modalTitulo" style="margin-top: 10px;">Editar Registro</h3>
+        <h3 id="modalTitulo" style="margin-top: 10px;">Editar/Lançar</h3>
         <p id="modalDataTexto" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px;"></p>
         <div id="valorAtualExibicao" style="color: var(--primary); font-weight: 800; font-size: 1.1rem; margin-bottom: 10px;"></div>
-        <input type="number" id="inputEdicaoModal" placeholder="Nova metragem" inputmode="decimal">
-        <button class="btn-modal" style="background:var(--primary); color:#000; width: 100%;" onclick="confirmarSalvarEdicao()">Salvar Alteração</button>
-        <button class="btn-modal" style="background:var(--danger); color:white; width:100%; margin-top: 15px;" onclick="abrirConfirmacao()">Apagar Registro</button>
+        <input type="number" id="inputEdicaoModal" placeholder="Metragem" inputmode="decimal">
+        <button class="btn-modal" style="background:var(--primary); color:#000; width: 100%;" onclick="confirmarSalvarEdicao()">Salvar Registro</button>
+        <button id="btnApagarModal" class="btn-modal" style="background:var(--danger); color:white; width:100%; margin-top: 15px;" onclick="abrirConfirmacao()">Apagar Registro</button>
     </div>
 </div>
 
@@ -285,7 +277,7 @@
 
 <script>
 /* --- VARIÁVEIS DO APP --- */
-let preco = parseFloat(localStorage.getItem("precoMetro")) || 250; // Ajustado para o seu valor padrão de R$ 250
+let preco = parseFloat(localStorage.getItem("precoMetro")) || 250;
 let dataVisualizacao = new Date();
 let diaSendoEditado = "";
 
@@ -293,7 +285,6 @@ const getHojeStr = () => new Date().toLocaleDateString('sv-SE');
 const formatar = (v) => v.toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
 const fecharModal = () => document.getElementById("modalEdicao").style.display = "none";
 
-/* --- NOTIFICAÇÕES --- */
 function notify(title, message, type = 'success') {
     const container = document.getElementById('notify-container');
     const toast = document.createElement('div');
@@ -304,7 +295,6 @@ function notify(title, message, type = 'success') {
     setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 300); }, 3500);
 }
 
-/* --- FUNÇÕES DOS MODAIS --- */
 function abrirConfirmacao() { document.getElementById("modalConfirmacao").style.display = "flex"; }
 function fecharConfirmacao() { document.getElementById("modalConfirmacao").style.display = "none"; }
 
@@ -317,7 +307,6 @@ function executarExclusao() {
     atualizarTudo();
 }
 
-/* --- TROCA DE TELAS --- */
 function mostrar(tela) {
     document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
     document.getElementById(tela).style.display = "block";
@@ -330,7 +319,6 @@ function mostrar(tela) {
     atualizarTudo();
 }
 
-/* --- SALVAR E EDITAR --- */
 function salvarMetros() {
     let val = parseFloat(document.getElementById("metros").value);
     if(!val) { notify("Atenção", "Insira um valor válido.", "warn"); return; }
@@ -342,24 +330,34 @@ function salvarMetros() {
     atualizarTudo();
 }
 
+// FUNÇÃO CORRIGIDA: Abre para qualquer dia clicado
 function abrirEdicao(dataStr) {
     let dados = JSON.parse(localStorage.getItem("dados")) || {};
-    if(!dados[dataStr]) return;
     diaSendoEditado = dataStr;
+    
+    // Formata a data para exibir (BR)
     document.getElementById("modalDataTexto").innerText = dataStr.split('-').reverse().join('/');
-    document.getElementById("valorAtualExibicao").innerText = `Atual: ${dados[dataStr]} m`;
-    document.getElementById("inputEdicaoModal").value = "";
+    
+    if(dados[dataStr]) {
+        document.getElementById("valorAtualExibicao").innerText = `Atual: ${dados[dataStr]} m`;
+        document.getElementById("btnApagarModal").style.display = "block";
+    } else {
+        document.getElementById("valorAtualExibicao").innerText = "Nenhum registro encontrado";
+        document.getElementById("btnApagarModal").style.display = "none";
+    }
+    
+    document.getElementById("inputEdicaoModal").value = dados[dataStr] || "";
     document.getElementById("modalEdicao").style.display = "flex";
 }
 
 function confirmarSalvarEdicao() {
     let novaMetragem = document.getElementById("inputEdicaoModal").value;
-    if(!novaMetragem || parseFloat(novaMetragem) <= 0) { notify("Atenção", "Informe a nova metragem.", "warn"); return; }
+    if(!novaMetragem || parseFloat(novaMetragem) <= 0) { notify("Atenção", "Informe a metragem.", "warn"); return; }
     let dados = JSON.parse(localStorage.getItem("dados")) || {};
     dados[diaSendoEditado] = parseFloat(novaMetragem);
     localStorage.setItem("dados", JSON.stringify(dados));
     fecharModal();
-    notify("Atualizado!", "Registro alterado com sucesso.", "success");
+    notify("Salvo!", "Registro atualizado com sucesso.", "success");
     atualizarTudo();
 }
 
@@ -374,7 +372,6 @@ function salvarPreco() {
     atualizarTudo();
 }
 
-/* --- ATUALIZAR INTERFACE --- */
 function atualizarTudo() {
     let dados = JSON.parse(localStorage.getItem("dados")) || {};
     let hojeObj = new Date();
@@ -407,29 +404,41 @@ function atualizarTudo() {
     let prim = new Date(dataVisualizacao.getFullYear(), dataVisualizacao.getMonth(), 1).getDay();
     let totalD = new Date(dataVisualizacao.getFullYear(), dataVisualizacao.getMonth() + 1, 0).getDate();
     for(let i=0; i<prim; i++) cal.appendChild(document.createElement("div"));
+    
     for(let i=1; i<=totalD; i++) {
         let diaLoop = new Date(dataVisualizacao.getFullYear(), dataVisualizacao.getMonth(), i);
         let dStr = diaLoop.toLocaleDateString('sv-SE');
         let div = document.createElement("div"); div.className = "day";
+        
+        // CORREÇÃO: Todos os dias agora são clicáveis para abrir o modal
+        div.onclick = () => abrirEdicao(dStr);
+
         if(dStr === hojeStr) div.classList.add("day-today");
+        
         if(dados[dStr]) {
             div.classList.add("day-has-data");
             div.innerHTML = `${i}<small>${dados[dStr]}m</small>`;
-            div.onclick = () => abrirEdicao(dStr);
         } else if (diaLoop < hojeObj.setHours(0,0,0,0)) {
-            div.classList.add("day-no-data"); div.innerText = i;
-        } else { div.innerText = i; }
+            div.classList.add("day-no-data"); 
+            div.innerText = i;
+        } else { 
+            div.innerText = i; 
+        }
         cal.appendChild(div);
     }
 
     let inputMetros = document.getElementById("metros");
     let btn = document.getElementById("btnSalvar");
     document.getElementById("labelDataAuto").innerText = "Hoje: " + hojeObj.toLocaleDateString('pt-BR');
+    
     if(dados[hojeStr]) {
-        inputMetros.readOnly = true; inputMetros.placeholder = "Lançado ✅";
-        btn.style.display = "none"; document.getElementById("montanteVerde").innerText = "Concluído";
+        inputMetros.readOnly = true; 
+        inputMetros.placeholder = "Lançado ✅";
+        btn.style.display = "none"; 
+        document.getElementById("montanteVerde").innerText = "Concluído";
     } else {
-        inputMetros.readOnly = false; inputMetros.placeholder = "0.00";
+        inputMetros.readOnly = false; 
+        inputMetros.placeholder = "0.00";
         btn.style.display = "block";
     }
 }
