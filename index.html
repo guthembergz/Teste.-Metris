@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metros Diário Pro</title>
+    
+    <!-- CONFIGURAÇÕES PARA IPHONE (MODO APP) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Metros Pro">
+    <!-- Substitua o link abaixo por uma imagem quadrada para ser o ícone do seu app -->
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/180/2ecc71/ffffff?text=M">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <style>
+        /* --- CORES E IDENTIDADE (DESIGN) --- */
+        :root {
+            --primary: #2ecc71;      /* Verde principal */
+            --bg-deep: #0a0a0a;      /* Fundo preto */
+            --bg-card: #151515;      /* Cinza dos cartões */
+            --text-main: #ffffff;    /* Texto branco */
+            --text-muted: #aaaaaa;   /* Texto cinza */
+            --accent-green: #1e3a2a; /* Fundo dias com dados */
+            --accent-red: #3a1e1e;   /* Fundo dias vazios */
+            --danger: #e74c3c;       /* Vermelho alerta */
+            --warning: #f1c40f;      /* Amarelo atenção */
+            --calendar-number: #bbbbbb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: linear-gradient(180deg, #0a0a0a 0%, #0d2b17 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 110px;
+            overflow-x: hidden;
+        }
+
+        header {
+            width: 100%; height: 60px;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 600; color: var(--primary);
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        /* --- SISTEMA DE NOTIFICAÇÃO --- */
+        #notify-container {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            width: 90%;
+            max-width: 400px;
+            pointer-events: none;
+        }
+
+        .notify {
+            background: rgba(15, 30, 20, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .notify.hide { animation: slideOut 0.3s ease forwards; }
+        @keyframes slideOut { to { opacity: 0; transform: translateY(-20px) scale(0.9); } }
+
+        .notify-icon { font-size: 32px; }
+        .notify-content { flex: 1; }
+        .notify-title { font-weight: 700; font-size: 1.05rem; display: block; margin-bottom: 2px; }
+        .notify-msg { font-size: 0.85rem; color: var(--text-muted); }
+
+        .notify-success { border-left: 4px solid var(--primary); }
+        .notify-success .notify-icon { color: var(--primary); }
+        .notify-warn { border-left: 4px solid var(--warning); background: rgba(30, 25, 10, 0.9); }
+        .notify-warn .notify-icon { color: var(--warning); }
+        .notify-error { border-left: 4px solid var(--danger); background: rgba(30, 10, 10, 0.9); }
+        .notify-error .notify-icon { color: var(--danger); }
+
+        /* --- JANELA DE CONFIRMAÇÃO --- */
+        #modalConfirmacao {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            z-index: 6000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .confirm-card {
+            background: var(--bg-card);
+            width: 85%; max-width: 300px; padding: 30px;
+            border-radius: 32px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .confirm-icon { color: var(--danger); font-size: 50px; margin-bottom: 15px; }
+
+        .btn-confirm-delete {
+            background: var(--danger); color: white; padding: 15px;
+            border-radius: 18px; border: none; width: 100%;
+            font-weight: 700; margin-top: 20px; cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: rgba(255,255,255,0.05); color: var(--text-muted);
+            padding: 12px; border-radius: 18px; border: none; width: 100%;
+            font-weight: 600; margin-top: 10px; cursor: pointer;
+        }
+
+        /* --- ESTRUTURA DOS CARDS --- */
+        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
+        .card {
+            background: rgba(21, 21, 21, 0.8);
+            padding: 20px; border-radius: 24px;
+            margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+        }
+
+        input {
+            width: 80%; max-width: 250px;
+            padding: 16px 0; margin: 10px auto;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1); 
+            background: rgba(30, 30, 30, 0.8);
+            color: white; font-size: 1.2rem; text-align: center; 
+            outline: none; display: block;
+        }
+
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 18px; border-radius: 20px; width: 100%; margin-top: 20px; font-weight: 700; cursor: pointer;}
+        
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .weekday-header { text-align: center; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); padding-bottom: 5px; }
+        .weekday-today { color: var(--primary) !important; }
+
+        .day {
+            aspect-ratio: 1/1; border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: 800; cursor: pointer;
+            background: rgba(255,255,255,0.03); color: var(--calendar-number);
+        }
+        .day-has-data { background: var(--accent-green); border: 1px solid rgba(46, 204, 113, 0.3); }
+        .day-no-data { background: var(--accent-red); border: 1px solid rgba(231, 76, 60, 0.2); }
+        .day-today { border: 2px solid var(--primary) !important; }
+        .day small { font-size: 0.65rem; margin-top: 2px; color: var(--primary); font-weight: 800; }
+
+        /* --- BARRA DE NAVEGAÇÃO --- */
+        .nav {
+            position: fixed; bottom: 0; width: 100%; display: flex;
+            background: rgba(10, 10, 10, 0.9); padding: 10px 0 30px 0;
+            backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.05); z-index: 1000;
+        }
+        .nav button { background: none; color: var(--text-muted); border: none; width: 100%; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .active-nav { color: var(--primary) !important; }
+
+        /* --- MODAL CUSTOMIZADO --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 5000; backdrop-filter: blur(8px); }
+        .modal-custom { background: var(--bg-card); width: 85%; max-width: 320px; border-radius: 28px; padding: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); position: relative; }
+        .btn-close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--danger); cursor: pointer; padding: 5px; }
+        .btn-modal { padding: 15px; border-radius: 15px; border: none; font-weight: 700; flex: 1; cursor: pointer; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+<div id="notify-container"></div>
+
+<!-- MODAL DE CONFIRMAÇÃO -->
+<div id="modalConfirmacao">
+    <div class="confirm-card">
+        <span class="material-symbols-rounded confirm-icon">delete_forever</span>
+        <h3 style="margin: 0;">Apagar Registro?</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">Essa ação não pode ser desfeita.</p>
+        <button class="btn-confirm-delete" onclick="executarExclusao()">Apagar Agora</button>
+        <button class="btn-cancel" onclick="fecharConfirmacao()">Cancelar</button>
+    </div>
+</div>
+
+<header>Metros Diário</header>
+
+<!-- MODAL DE EDIÇÃO -->
+<div id="modalEdicao" class="modal-overlay">
+    <div class="modal-custom">
+        <button class="btn-close-modal" onclick="fecharModal()">
+            <span class="material-symbols-rounded">cancel</span>
+        </button>
+        <h3 id="modalTitulo" style="margin-top: 10px;">Editar Registro</h3>
+        <p id="modalDataTexto" style="color:var(--text-muted); font-size:0.85rem; margin-bottom:5px;"></p>
+        <div id="valorAtualExibicao" style="color: var(--primary); font-weight: 800; font-size: 1.1rem; margin-bottom: 10px;"></div>
+        <input type="number" id="inputEdicaoModal" placeholder="Nova metragem" inputmode="decimal">
+        <button class="btn-modal" style="background:var(--primary); color:#000; width: 100%;" onclick="confirmarSalvarEdicao()">Salvar Alteração</button>
+        <button class="btn-modal" style="background:var(--danger); color:white; width:100%; margin-top: 15px;" onclick="abrirConfirmacao()">Apagar Registro</button>
+    </div>
+</div>
+
+<!-- TELAS -->
+<div class="container" id="home">
+    <div class="card">
+        <small style="color:var(--text-muted); font-weight: 600; text-transform: uppercase;">Ganhos deste Mês</small>
+        <div id="totalHome" style="color:var(--primary); font-size: 2.2rem; font-weight: 800;">R$ 0,00</div>
+    </div>
+    
+    <div class="card" style="opacity: 0.85;">
+        <small style="color:var(--text-muted); font-weight: 600; text-transform: uppercase;">Ganhos do Mês Passado</small>
+        <div id="totalMesPassado" style="color:var(--text-main); font-size: 1.6rem; font-weight: 700; margin-top: 5px;">R$ 0,00</div>
+    </div>
+
+    <div class="card" style="background: rgba(30, 58, 42, 0.3); border: 1px solid rgba(46, 204, 113, 0.2);">
+        <span class="material-symbols-rounded" style="font-size: 48px; color: var(--primary); margin-bottom: 10px;">account_balance_wallet</span>
+        <p style="color: var(--text-main); font-weight: 700; margin: 5px 0; font-size: 1.1rem;">Bem-vindo de volta!</p>
+        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4;">Seu progresso financeiro está seguro. Mantenha seus lançamentos em dia.</p>
+    </div>
+</div>
+
+<div class="container" id="historico" style="display:none">
+    <div class="card" style="margin-bottom: 10px;">
+        <small style="color:var(--text-muted); font-weight: 600;">Total no mês visualizado</small>
+        <div id="totalMesHist" style="color:var(--primary); font-size: 1.5rem; font-weight: 800;">R$ 0,00</div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+        <button onclick="mudarMes(-1)" style="background:none; border:none; color:var(--primary);"><span class="material-symbols-rounded">chevron_left</span></button>
+        <h3 id="mesAnoHist" style="text-transform: capitalize; margin:0;"></h3>
+        <button onclick="mudarMes(1)" style="background:none; border:none; color:var(--primary);"><span class="material-symbols-rounded">chevron_right</span></button>
+    </div>
+    <div class="card"><div class="calendar" id="calendarHist"></div></div>
+</div>
+
+<div class="container" id="inserir" style="display:none">
+    <div class="card">
+        <h3>Lançar Metragem</h3>
+        <span id="labelDataAuto" style="color: var(--primary); font-size: 0.8rem; font-weight: 700;"></span>
+        <input type="number" id="metros" placeholder="0.00" inputmode="decimal">
+        <div style="margin-top:20px;">
+            <small style="color:var(--text-muted)">Você vai receber:</small>
+            <div id="montanteVerde" style="color:var(--primary); font-size:1.8rem; font-weight:800;">R$ 0,00</div>
+        </div>
+        <button class="btn-primary" id="btnSalvar" onclick="salvarMetros()">Salvar Agora</button>
+    </div>
+</div>
+
+<div class="container" id="config" style="display:none">
+    <div class="card">
+        <h3>Configurações</h3>
+        <p style="font-size:0.7rem; color:var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 5px;">Preço atual por metro</p>
+        <div id="precoAtualExibicao" style="color:var(--primary); font-size: 1.8rem; font-weight: 800; margin-bottom: 15px;"></div>
+        <label style="font-size:0.75rem; color:var(--text-main); font-weight: 600;">Novo valor (R$)</label>
+        <input type="number" id="inputPrecoMetro" placeholder="0.00" step="0.01" inputmode="decimal">
+        <button class="btn-primary" onclick="salvarPreco()">Atualizar Preço</button>
+    </div>
+</div>
+
+<!-- NAVEGAÇÃO -->
+<div class="nav">
+    <button onclick="mostrar('home')" id="nav-home"><span class="material-symbols-rounded">dashboard</span></button>
+    <button onclick="mostrar('historico')" id="nav-historico"><span class="material-symbols-rounded">calendar_month</span></button>
+    <button onclick="mostrar('inserir')" id="nav-inserir"><span class="material-symbols-rounded">add_box</span></button>
+    <button onclick="mostrar('config')" id="nav-config"><span class="material-symbols-rounded">settings</span></button>
+</div>
+
+<script>
+/* --- VARIÁVEIS DO APP --- */
+let preco = parseFloat(localStorage.getItem("precoMetro")) || 1.5;
+let dataVisualizacao = new Date();
+let diaSendoEditado = "";
+
+const getHojeStr = () => new Date().toLocaleDateString('sv-SE');
+const formatar = (v) => v.toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+const fecharModal = () => document.getElementById("modalEdicao").style.display = "none";
+
+/* --- NOTIFICAÇÕES --- */
+function notify(title, message, type = 'success') {
+    const container = document.getElementById('notify-container');
+    const toast = document.createElement('div');
+    toast.className = `notify notify-${type}`;
+    let icon = type === 'warn' ? 'warning' : (type === 'error' ? 'error' : 'check_circle');
+    toast.innerHTML = `<span class="material-symbols-rounded notify-icon">${icon}</span><div class="notify-content"><span class="notify-title">${title}</span><span class="notify-msg">${message}</span></div>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+/* --- FUNÇÕES DOS MODAIS --- */
+function abrirConfirmacao() { document.getElementById("modalConfirmacao").style.display = "flex"; }
+function fecharConfirmacao() { document.getElementById("modalConfirmacao").style.display = "none"; }
+
+function executarExclusao() {
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+    delete dados[diaSendoEditado];
+    localStorage.setItem("dados", JSON.stringify(dados));
+    fecharConfirmacao(); fecharModal();
+    notify("Apagado", "O registro foi removido com sucesso.", "error");
+    atualizarTudo();
+}
+
+/* --- TROCA DE TELAS --- */
+function mostrar(tela) {
+    document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
+    document.getElementById(tela).style.display = "block";
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active-nav'));
+    document.getElementById('nav-' + tela).classList.add('active-nav');
+    if(tela === 'config') {
+        document.getElementById("precoAtualExibicao").innerText = formatar(preco);
+        document.getElementById("inputPrecoMetro").value = "";
+    }
+    atualizarTudo();
+}
+
+/* --- SALVAR E EDITAR --- */
+function salvarMetros() {
+    let val = parseFloat(document.getElementById("metros").value);
+    if(!val) { notify("Atenção", "Insira um valor válido.", "warn"); return; }
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+    dados[getHojeStr()] = val;
+    localStorage.setItem("dados", JSON.stringify(dados));
+    document.getElementById("metros").value = "";
+    notify("Trabalho Concluído!", "A metragem de hoje já foi enviada.", "success");
+    atualizarTudo();
+}
+
+function abrirEdicao(dataStr) {
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+    if(!dados[dataStr]) return;
+    diaSendoEditado = dataStr;
+    document.getElementById("modalDataTexto").innerText = dataStr.split('-').reverse().join('/');
+    document.getElementById("valorAtualExibicao").innerText = `Atual: ${dados[dataStr]} m`;
+    document.getElementById("inputEdicaoModal").value = "";
+    document.getElementById("modalEdicao").style.display = "flex";
+}
+
+function confirmarSalvarEdicao() {
+    let novaMetragem = document.getElementById("inputEdicaoModal").value;
+    if(!novaMetragem || parseFloat(novaMetragem) <= 0) { notify("Atenção", "Informe a nova metragem.", "warn"); return; }
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+    dados[diaSendoEditado] = parseFloat(novaMetragem);
+    localStorage.setItem("dados", JSON.stringify(dados));
+    fecharModal();
+    notify("Atualizado!", "Registro alterado com sucesso.", "success");
+    atualizarTudo();
+}
+
+function salvarPreco() {
+    let novoPreco = document.getElementById("inputPrecoMetro").value;
+    if(!novoPreco || parseFloat(novoPreco) <= 0) { notify("Atenção", "Informe o novo valor por metro.", "warn"); return; }
+    preco = parseFloat(novoPreco);
+    localStorage.setItem("precoMetro", preco);
+    document.getElementById("precoAtualExibicao").innerText = formatar(preco);
+    document.getElementById("inputPrecoMetro").value = "";
+    notify("Sucesso", "Valor por metro atualizado.", "success");
+    atualizarTudo();
+}
+
+/* --- ATUALIZAR INTERFACE --- */
+function atualizarTudo() {
+    let dados = JSON.parse(localStorage.getItem("dados")) || {};
+    let hojeObj = new Date();
+    let hojeStr = getHojeStr();
+    let mesAtualKey = hojeStr.substring(0,7);
+    let dataPassada = new Date(hojeObj.getFullYear(), hojeObj.getMonth() - 1, 1);
+    let mesPassadoKey = dataPassada.toISOString().substring(0,7);
+    let somaHome = 0, somaPassado = 0, somaHist = 0;
+
+    Object.keys(dados).forEach(k => {
+        if(k.startsWith(mesAtualKey)) somaHome += (dados[k] * preco);
+        if(k.startsWith(mesPassadoKey)) somaPassado += (dados[k] * preco);
+        if(k.startsWith(dataVisualizacao.toISOString().substring(0,7))) somaHist += (dados[k] * preco);
+    });
+
+    document.getElementById("totalHome").innerText = formatar(somaHome);
+    document.getElementById("totalMesPassado").innerText = formatar(somaPassado);
+    document.getElementById("totalMesHist").innerText = formatar(somaHist);
+    document.getElementById("mesAnoHist").innerText = dataVisualizacao.toLocaleString('pt-BR', {month:'long', year:'numeric'});
+    
+    let cal = document.getElementById("calendarHist"); cal.innerHTML = "";
+    const diasSemana = ['D','S','T','Q','Q','S','S'];
+    const diaHojeIndex = hojeObj.getDay();
+    diasSemana.forEach((d, index) => {
+        let div = document.createElement("div"); div.className = "weekday-header";
+        if(index === diaHojeIndex) div.classList.add("weekday-today");
+        div.innerText = d; cal.appendChild(div);
+    });
+
+    let prim = new Date(dataVisualizacao.getFullYear(), dataVisualizacao.getMonth(), 1).getDay();
+    let totalD = new Date(dataVisualizacao.getFullYear(), dataVisualizacao.getMonth() + 1, 0).getDate();
+    for(let i=0; i<prim; i++) cal.appendChild(document.createElement("div"));
+    for(let i=1; i<=totalD; i++) {
+        let diaLoop = new Date(dataVisualizacao.getFullYear(), dataVisualizacao.getMonth(), i);
+        let dStr = diaLoop.toLocaleDateString('sv-SE');
+        let div = document.createElement("div"); div.className = "day";
+        if(dStr === hojeStr) div.classList.add("day-today");
+        if(dados[dStr]) {
+            div.classList.add("day-has-data");
+            div.innerHTML = `${i}<small>${dados[dStr]}m</small>`;
+            div.onclick = () => abrirEdicao(dStr);
+        } else if (diaLoop < hojeObj.setHours(0,0,0,0)) {
+            div.classList.add("day-no-data"); div.innerText = i;
+        } else { div.innerText = i; }
+        cal.appendChild(div);
+    }
+
+    let inputMetros = document.getElementById("metros");
+    let btn = document.getElementById("btnSalvar");
+    document.getElementById("labelDataAuto").innerText = "Hoje: " + hojeObj.toLocaleDateString('pt-BR');
+    if(dados[hojeStr]) {
+        inputMetros.readOnly = true; inputMetros.placeholder = "Lançado ✅";
+        btn.style.display = "none"; document.getElementById("montanteVerde").innerText = "Concluído";
+    } else {
+        inputMetros.readOnly = false; inputMetros.placeholder = "0.00";
+        btn.style.display = "block";
+    }
+}
+
+document.getElementById("metros").oninput = (e) => {
+    let v = parseFloat(e.target.value) || 0;
+    document.getElementById("montanteVerde").innerText = formatar(v * preco);
+};
+function mudarMes(d) { dataVisualizacao.setMonth(dataVisualizacao.getMonth() + d); atualizarTudo(); }
+mostrar('home');
+</script>
+</body>
+</html>
